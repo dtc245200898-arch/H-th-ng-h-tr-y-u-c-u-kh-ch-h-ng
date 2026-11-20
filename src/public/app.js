@@ -87,7 +87,15 @@ dialog.addEventListener("click", async (event) => {
 
 const events = new EventSource("/api/events");
 events.onopen = () => { document.querySelector(".live-status").classList.add("online"); document.querySelector("#connectionText").textContent = "Realtime đang hoạt động"; };
-events.onmessage = () => loadTickets();
+events.onmessage = (event) => {
+  loadTickets();
+  const payload = JSON.parse(event.data);
+  const settings = JSON.parse(localStorage.getItem("supportSettings") || '{"realtime":true,"sound":false,"compact":false}');
+  if (!settings.realtime) return;
+  if (payload.type === "ticket.created") addNotification("Yêu cầu mới", `${payload.ticket.title} vừa được tạo.`);
+  if (payload.type === "ticket.assigned") addNotification("Đã phân công", `${payload.ticket.title} đã được phân công cho nhân viên.`);
+  if (payload.type === "ticket.updated") addNotification("Cập nhật trạng thái", `${payload.ticket.title}: ${payload.ticket.status}.`);
+};
 events.onerror = () => { document.querySelector(".live-status").classList.remove("online"); document.querySelector("#connectionText").textContent = "Mất kết nối realtime"; };
 
 function showToast(message) {
@@ -108,12 +116,99 @@ document.querySelectorAll(".nav-item").forEach((item) => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
     if (item.dataset.nav === "tickets") document.querySelector(".queue-panel").scrollIntoView({ behavior: "smooth" });
-    if (item.dataset.nav === "notifications") {
-      document.querySelector("#notificationCount").style.display = "none";
-      showToast("Bạn đã xem tất cả thông báo");
-    }
-    if (item.dataset.nav === "settings") showToast("Chế độ cài đặt đang được chuẩn bị");
+    if (item.dataset.nav === "notifications") openNotifications();
+    if (item.dataset.nav === "settings") openSettings();
   });
+});
+
+const utilityDialog = document.querySelector("#utilityDialog");
+const utilityContent = document.querySelector("#utilityContent");
+let notifications = JSON.parse(localStorage.getItem("supportNotifications") || "[]");
+
+function saveNotifications() {
+  localStorage.setItem("supportNotifications", JSON.stringify(notifications));
+  updateNotificationCount();
+}
+
+function updateNotificationCount() {
+  const unread = notifications.filter((item) => !item.read).length;
+  const badge = document.querySelector("#notificationCount");
+  badge.textContent = unread;
+  badge.style.display = unread ? "grid" : "none";
+}
+
+function addNotification(title, message) {
+  notifications.unshift({ id: Date.now(), title, message, read: false, time: new Date().toISOString() });
+  notifications = notifications.slice(0, 30);
+  saveNotifications();
+}
+
+function openNotifications() {
+  utilityContent.innerHTML = `
+    <div class="utility-heading"><div><p class="dialog-eyebrow">TRUNG TÂM CẬP NHẬT</p><h2>Thông báo</h2></div><button id="markAllRead" class="text-button" type="button">Đánh dấu đã đọc</button></div>
+    <div class="notification-list">
+      ${notifications.length ? notifications.map((item) => `
+        <article class="notification-item ${item.read ? "read" : "unread"}" data-notification-id="${item.id}">
+          <button class="notification-mark" type="button" aria-label="Đánh dấu đã đọc"><i data-lucide="${item.read ? "circle-check" : "circle-dot"}"></i></button>
+          <div><strong>${escapeHtml(item.title)}</strong><p>${escapeHtml(item.message)}</p><small>${new Date(item.time).toLocaleString("vi-VN")}</small></div>
+        </article>`).join("") : `<div class="utility-empty"><i data-lucide="bell-off"></i><strong>Chưa có thông báo</strong><span>Các hoạt động mới sẽ xuất hiện tại đây.</span></div>`}
+    </div>
+    ${notifications.length ? `<button id="clearNotifications" class="danger-button" type="button"><i data-lucide="trash-2"></i>Xóa tất cả</button>` : ""}`;
+  utilityDialog.showModal();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function openSettings() {
+  const settings = JSON.parse(localStorage.getItem("supportSettings") || '{"realtime":true,"sound":false,"compact":false}');
+  utilityContent.innerHTML = `
+    <div class="utility-heading"><div><p class="dialog-eyebrow">TÙY CHỈNH</p><h2>Cài đặt</h2></div></div>
+    <div class="settings-list">
+      <label class="setting-row"><div><strong>Thông báo realtime</strong><span>Nhận cập nhật khi ticket thay đổi</span></div><input id="settingRealtime" type="checkbox" ${settings.realtime ? "checked" : ""}></label>
+      <label class="setting-row"><div><strong>Âm thanh thông báo</strong><span>Phát âm thanh khi có cập nhật mới</span></div><input id="settingSound" type="checkbox" ${settings.sound ? "checked" : ""}></label>
+      <label class="setting-row"><div><strong>Chế độ danh sách gọn</strong><span>Hiển thị nhiều ticket hơn trong một màn hình</span></div><input id="settingCompact" type="checkbox" ${settings.compact ? "checked" : ""}></label>
+    </div>
+    <button id="saveSettings" class="submit-button utility-save" type="button"><i data-lucide="save"></i>Lưu cài đặt</button>`;
+  utilityDialog.showModal();
+  if (window.lucide) window.lucide.createIcons();
+}
+
+function applySettings() {
+  const settings = JSON.parse(localStorage.getItem("supportSettings") || '{"realtime":true,"sound":false,"compact":false}');
+  document.body.classList.toggle("compact-mode", settings.compact);
+}
+
+utilityDialog.querySelector(".utility-close").addEventListener("click", () => utilityDialog.close());
+utilityDialog.addEventListener("click", (event) => {
+  if (event.target === utilityDialog) utilityDialog.close();
+
+  if (event.target.closest("#markAllRead")) {
+    notifications.forEach((item) => { item.read = true; });
+    saveNotifications();
+    openNotifications();
+  }
+  if (event.target.closest("#clearNotifications")) {
+    notifications = [];
+    saveNotifications();
+    openNotifications();
+  }
+  if (event.target.closest(".notification-mark")) {
+    const itemElement = event.target.closest(".notification-item");
+    const item = notifications.find((entry) => entry.id === Number(itemElement.dataset.notificationId));
+    if (item) item.read = true;
+    saveNotifications();
+    openNotifications();
+  }
+  if (event.target.closest("#saveSettings")) {
+    const settings = {
+      realtime: document.querySelector("#settingRealtime").checked,
+      sound: document.querySelector("#settingSound").checked,
+      compact: document.querySelector("#settingCompact").checked
+    };
+    localStorage.setItem("supportSettings", JSON.stringify(settings));
+    applySettings();
+    utilityDialog.close();
+    showToast("Đã lưu cài đặt");
+  }
 });
 
 document.querySelector("#chatButton").addEventListener("click", () => {
@@ -124,4 +219,6 @@ window.addEventListener("DOMContentLoaded", () => {
   if (window.lucide) window.lucide.createIcons();
 });
 
+applySettings();
+updateNotificationCount();
 loadTickets();

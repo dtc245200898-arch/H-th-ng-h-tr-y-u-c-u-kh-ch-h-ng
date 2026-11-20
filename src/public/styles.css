@@ -105,6 +105,31 @@ input:focus, textarea:focus, select:focus { border-color: #78a6ef; box-shadow: 0
 .dialog-panel { border: 0; }
 dialog { width: min(600px, calc(100% - 32px)); border: 1px solid #dde5ef; border-radius: 8px; padding: 24px; color: var(--ink); box-shadow: 0 24px 60px rgba(28,48,82,.24); }
 dialog::backdrop { background: rgba(30,48,79,.28); backdrop-filter: blur(3px); }
+.utility-dialog { width: min(560px, calc(100% - 32px)); }
+.utility-heading { min-height: 48px; display: flex; align-items: flex-start; justify-content: space-between; padding-right: 38px; }
+.utility-heading h2 { margin: 0; }
+.text-button { border: 0; background: transparent; color: #3974d4; font-size: 12px; font-weight: 800; }
+.notification-list { max-height: 390px; overflow-y: auto; display: grid; gap: 8px; margin-top: 12px; }
+.notification-item { display: grid; grid-template-columns: 38px 1fr; gap: 10px; align-items: start; border: 1px solid #e5ebf3; border-radius: 7px; padding: 12px; }
+.notification-item.unread { border-left: 4px solid #3978df; background: #f7faff; }
+.notification-mark { width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #edf4ff; color: #3978df; }
+.notification-item strong { font-size: 13px; }
+.notification-item p { margin: 4px 0; color: #66728a; font-size: 12px; }
+.notification-item small { color: #9aa4b5; font-size: 10px; }
+.utility-empty { min-height: 220px; display: grid; place-content: center; justify-items: center; color: #8994a8; }
+.utility-empty svg { width: 42px; height: 42px; margin-bottom: 10px; }
+.utility-empty strong { color: #526179; }
+.utility-empty span { margin-top: 4px; font-size: 12px; }
+.danger-button { height: 38px; display: flex; align-items: center; gap: 8px; margin: 12px 0 0 auto; border: 1px solid #f0ccd1; border-radius: 6px; background: #fff7f8; color: #b84e5b; font-size: 12px; }
+.settings-list { display: grid; gap: 8px; margin: 12px 0 18px; }
+.setting-row { min-height: 64px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #e5ebf3; border-radius: 7px; padding: 11px 12px; }
+.setting-row div { display: grid; gap: 4px; }
+.setting-row strong { font-size: 13px; }
+.setting-row span { color: #7c879a; font-size: 11px; }
+.setting-row input { width: 40px; height: 21px; accent-color: #3978df; }
+.utility-save { width: 100%; }
+.compact-mode .ticket { min-height: 54px; padding-top: 7px; padding-bottom: 7px; }
+.compact-mode .ticket-list { gap: 5px; }
 .close-dialog { position: absolute; right: 12px; top: 12px; width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: 50%; background: #edf1f6; color: #556178; }
 .dialog-eyebrow { margin: 0 0 5px; color: #4d7ed2; font-size: 11px; font-weight: 800; }
 dialog h2 { margin: 0 0 10px; }
